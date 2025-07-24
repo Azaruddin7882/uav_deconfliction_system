@@ -15,6 +15,7 @@ This system provides strategic deconfliction for drone missions in shared airspa
    use below commands open in terminal enter following commands to setup and run.
    
    1.git clone git@github.com:Azaruddin7882/uav_deconfliction_system.git
+   
    2.cd uav_deconfliction_system
 
    3.pip install -r requirements.txt
