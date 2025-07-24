@@ -3,12 +3,77 @@ from datetime import datetime, timedelta
 from src.core.mission import DroneMission
 from src.core.conflict import ConflictDetector
 
+
+"""
+Testing scenerios:
+->Testing No Conflict (Safe Scenarios)
+  To verify the system correctly identifies when drones won't collide.
+    Example:
+    Drone A flies left-to-right at 10 AM
+    Drone B flies far away at 11 AM
+    Should report no danger
+
+-> Time Overlap But Safe Distance
+   Confirms drones can fly at the same time if routes don't cross.
+    Example:
+
+    Drone A flies north path at 10 AM
+    Drone B flies parallel south path at same time
+    Safe despite same flight time
+
+-> Conflict Detection (Catching Crashes)
+   Ensures the system spots actual collisions.
+    Example:
+
+    Drone A crosses east-west at 10 AM
+    Drone B crosses north-south through same point at same time
+    Must detect this X-shaped collision
+
+-> Same Location, Different Times
+   Checks time separation prevents false alarms.
+    Example:
+
+    Both drones pass (50,50,50) but:
+    Drone A at 10 AM
+    Drone B at 3 PM
+    Safe because of time gap
+
+->  Vertical (Altitude) Conflicts
+    Verifies 3D safety checks work up/down.
+    Example:
+
+    Drone A ascending through 90m
+    Drone B descending through 90m at same time
+    Must flag this elevator-style collision
+
+-> Safety Buffer Accuracy
+   Tests the 5m danger zone is respected.
+    Example:
+
+    Drones 5.1m apart → Safe (4.9m apart → Danger)
+    Like testing a "no closer than 5m" forcefield
+
+->Multiple Drone Conflicts
+  Handles complex air traffic scenarios.
+    Example:
+
+    Your drone + 2 others crossing paths at different points
+    Must catch all collision points
+
+-> Invalid Mission Tests
+   Catches user errors early:
+
+    Single-waypoint missions (can't fly nowhere)
+    End time before start time (time travel not allowed)
+    Prevents impossible flight plans    
+
+"""
+
 class TestConflictDetection(unittest.TestCase):
     def setUp(self):
         self.detector = ConflictDetector(safety_buffer=5.0)
         
     def test_no_conflict(self):
-        """Test missions that don't overlap in time or space"""
         mission1 = DroneMission(
             waypoints=[[0, 0, 0], [10, 0, 0]],
             start_time=datetime(2025, 1, 1, 10, 0),
@@ -23,7 +88,6 @@ class TestConflictDetection(unittest.TestCase):
         self.assertEqual(len(conflicts), 0)
         
     def test_temporal_overlap_but_spatial_safe(self):
-        """Test missions that overlap in time but not in space"""
         mission1 = DroneMission(
             waypoints=[[0, 0, 0], [100, 0, 0]],
             start_time=datetime(2025, 1, 1, 10, 0),
@@ -38,7 +102,6 @@ class TestConflictDetection(unittest.TestCase):
         self.assertEqual(len(conflicts), 0)
         
     def test_conflict_detection(self):
-        """Test missions that should have a conflict"""
         mission1 = DroneMission(
             waypoints=[[0, 0, 0], [100, 0, 0]],
             start_time=datetime(2025, 1, 1, 10, 0),
@@ -59,7 +122,6 @@ class TestConflictDetection(unittest.TestCase):
         self.assertEqual(conflict['time'].time(), datetime(2025, 1, 1, 10, 5, 30).time())
         
     def test_edge_case_same_location_different_time(self):
-        """Test same location but different times - should be safe"""
         mission1 = DroneMission(
             waypoints=[[50, 50, 50], [60, 60, 60]],
             start_time=datetime(2025, 1, 1, 10, 0),
@@ -74,7 +136,6 @@ class TestConflictDetection(unittest.TestCase):
         self.assertEqual(len(conflicts), 0)
         
     def test_vertical_conflict(self):
-        """Test conflict detection in vertical space (altitude)"""
         mission1 = DroneMission(
             waypoints=[[0, 0, 0], [0, 0, 100]],
             start_time=datetime(2025, 1, 1, 10, 0),
@@ -89,7 +150,6 @@ class TestConflictDetection(unittest.TestCase):
         self.assertGreater(len(conflicts), 0)
         
     def test_buffer_zone_respected(self):
-        """Test that safety buffer is properly respected"""
         # These drones should pass just outside the safety buffer
         mission1 = DroneMission(
             waypoints=[[0, 0, 0], [100, 0, 0]],
@@ -114,7 +174,6 @@ class TestConflictDetection(unittest.TestCase):
         self.assertGreater(len(conflicts), 0)
         
     def test_multiple_conflicts(self):
-        """Test detection of multiple conflicts with multiple drones"""
         mission1 = DroneMission(
             waypoints=[[0, 0, 0], [100, 100, 100]],
             start_time=datetime(2025, 1, 1, 10, 0),
@@ -134,7 +193,6 @@ class TestConflictDetection(unittest.TestCase):
         self.assertGreaterEqual(len(conflicts), 2)
         
     def test_mission_with_single_waypoint(self):
-        """Test handling of mission with only one waypoint (should raise error)"""
         with self.assertRaises(ValueError):
             DroneMission(
                 waypoints=[[0, 0, 0]],
@@ -143,7 +201,6 @@ class TestConflictDetection(unittest.TestCase):
             )
             
     def test_invalid_time_window(self):
-        """Test handling of invalid time window (end before start)"""
         with self.assertRaises(ValueError):
             DroneMission(
                 waypoints=[[0, 0, 0], [10, 0, 0]],

@@ -12,6 +12,18 @@ This system provides strategic deconfliction for drone missions in shared airspa
 ## Installation
 1. Clone the repository
 2. Install dependencies:
-   ```bash
+   use below commands open in terminal enter following commands to setup and run.
    
-   pip install -r requirements.txt
+   1.git clone git@github.com:Azaruddin7882/uav_deconfliction_system.git
+   2.cd uav_deconfliction_system
+
+   3.pip install -r requirements.txt
+
+   -> For MP4 export, FFmpeg must be installed system-wide (not just a Python package)
+   4.sudo apt install ffmpeg
+
+   5. python src/main.py
+   6. check output folder inside that ouputs are generated for given inputs
+   7. To run unitest cases follow below command
+   8. python -m unittest tests/test_conflict.py
+

@@ -10,11 +10,26 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+"""
+Approach:
+-> Mission Setup 
+-> Program Flow(Load Mission Files)
+   Reads primary_mission.json (drone1)
+   Reads simulated_flights.json (drone2)
+-> Generate Flight Paths
+   Calculates exact positions every second
+-> Conflict Detection
+   Checks if drones come within 5m (safety buffer)
+-> Visualization(creates):
+    mission_plot.png: Static 3D map showing collision point
+    mission_animation.mp4: Video of drone movements
+"""
+
 def main():
     # Configuration
     SAFETY_BUFFER = 5.0  # meters
-    DRONE_SPEED = 10.0    # m/s
-    ANIMATION_FPS = 10     # frames per second for animation
+    DRONE_SPEED = 10.0   # m/s
+    ANIMATION_FPS = 10   # frames per second for animation
     
     print("=== UAV Strategic Deconfliction System ===")
     
@@ -45,7 +60,7 @@ def main():
         
         # Report results
         if conflicts:
-            print(f"\n🚨 Conflict detected! Found {len(conflicts)} potential conflicts.")
+            print(f"\n Conflict detected! Found {len(conflicts)} potential conflicts.")
             for i, conflict in enumerate(conflicts[:3]):  # Show first 3 conflicts
                 print(f"\nConflict {i+1}:")
                 print(f"  Time: {conflict['time'].strftime('%H:%M:%S')}")
@@ -53,7 +68,7 @@ def main():
                 print(f"  Distance: {conflict['distance']:.2f}m")
                 print(f"  With: {conflict['conflicting_drone']}")
         else:
-            print("\n✅ No conflicts detected. Mission is safe to proceed.")
+            print("\n No conflicts detected. Mission is safe to proceed.")
         
         # Generate static visualization
         print("\nGenerating visualization...")

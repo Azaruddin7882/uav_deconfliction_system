@@ -4,12 +4,74 @@ from typing import List, Tuple, Optional
 from datetime import datetime, timedelta
 import math
 
+"""
+Approach:
+
+-> Turns a list of GPS coordinates (waypoints) into a smooth flight path, 
+   like connecting dots to draw a route on a map.
+
+-> Drones don't instantly go full speed they gradually accelerate and slow down when approaching stops.
+-> Calculates exactly when the drone will be at every point along the path (down to the second), 
+   so we know where it is at any moment.
+-> It can tell you the drone's exact location if you ask "Where will it be at 2:15 PM?"
+-> Reads and writes flight plans using standard JSON files, like saving a route in Google Maps.
+
+Example: 
+
+----> Imagine two drones flying in your neighborhood
+
+    1.Pizza Drone
+
+    Route: Pizza Shop (Point A) → Your Home (Point B)
+    Schedule: 6:00 PM - 6:10 PM
+    Path: Straight line at 100m height
+
+    2. Amazon Drone
+    Route: Warehouse → Neighbor's House
+    Schedule: 6:05 PM - 6:15 PM
+    Path: Crosses your drone's path at 100m height
+
+    The written code does below actions
+
+    -> Plans Your Drone's Trip
+       Calculates exact positions every second:
+
+       6:00 PM: At pizza shop (0,0,0)  
+       6:05 PM: Halfway (5,5,100)  
+       6:10 PM: Your home (10,10,0)
+
+    -> Spots the Danger
+       At 6:07 PM, both drones reach (7,7,100) at the same time ===>  CRASH!
+       Outputs this warning:
+       {
+        "time": "6:07 PM",
+        "location": [7,7,100],
+        "distance": 0.0,  #  collision occurs 
+        "conflicting_drone": "amazon_drone_123"
+       }
+
+    -> Gives Early Warnings
+       At 6:06:30 PM, drones are 2m apart ==>risky:
+       {
+            "time": "6:06:30 PM", 
+            "location": [6.5,6.5,100],
+            "distance": 2.0,
+            "conflicting_drone": "amazon_drone_123"
+        }
+
+    -> what we should do here
+    Option 1: Delay your drone by 5 minutes
+    Option 2: Change route to fly at 120m height instead
+    Option 3: Pick a different path 
+
+"""
+
 @dataclass
 class Waypoint:
     x: float
     y: float
-    z: float = 0.0  # Default to 2D if not specified
-    timestamp: datetime = None  # Will be populated during trajectory generation
+    z: float = 0.0  
+    timestamp: datetime = None  
 
 class DroneMission:
     def __init__(self, waypoints: List[Tuple[float, float, float]], 
@@ -24,20 +86,10 @@ class DroneMission:
         self._validate_mission_time()
         
     def _validate_mission_time(self):
-        """Ensure the mission has a valid time window"""
         if self.end_time <= self.start_time:
             raise ValueError("End time must be after start time")
     
     def generate_trajectory(self, speed: float, acceleration: float = 2.0, deceleration: float = 2.0):
-        """
-        Interpolate waypoints into a continuous trajectory with timestamps
-        accounting for acceleration and deceleration between waypoints.
-        
-        Args:
-            speed: Cruising speed in m/s
-            acceleration: Acceleration rate in m/s² (default: 2.0)
-            deceleration: Deceleration rate in m/s² (default: 2.0)
-        """
         if speed <= 0:
             raise ValueError("Speed must be positive")
         if acceleration <= 0 or deceleration <= 0:
@@ -146,10 +198,6 @@ class DroneMission:
             self.trajectory.append(wp2)
 
     def get_position_at_time(self, time: datetime) -> Optional[Waypoint]:
-        """
-        Get the drone's position at a specific time by interpolating the trajectory.
-        Returns None if the time is outside the mission window.
-        """
         if time < self.start_time or time > self.end_time:
             return None
             
@@ -204,7 +252,6 @@ class DroneMission:
 class MissionLoader:
     @staticmethod
     def load_primary_mission(file_path: str) -> DroneMission:
-        """Load primary mission from JSON file"""
         with open(file_path) as f:
             data = json.load(f)
         return DroneMission(
@@ -215,7 +262,6 @@ class MissionLoader:
     
     @staticmethod
     def load_simulated_flights(file_path: str) -> List[DroneMission]:
-        """Load simulated flights from JSON file"""
         with open(file_path) as f:
             data = json.load(f)
         return [DroneMission(

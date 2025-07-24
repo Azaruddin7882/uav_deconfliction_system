@@ -7,7 +7,39 @@ from datetime import datetime, timedelta
 
 from core.mission import DroneMission
 
+"""
+Approach for visualization 
+-> 3D Mission Mapping
+   Plots drone routes in 3D space (X,Y,Altitude) like a GPS map for aircraft.
 
+-> Time Animation
+    Shows drone movement second-by-second like a flight tracker.
+
+-> Conflict Highlighting
+    Marks dangerous spots where drones get too close.
+
+-> Smart View Adjustment
+    Automatically zooms to fit all flight paths with 20% padding.
+
+-> Video Generation
+    Creates MP4 videos of the simulation for review.
+
+Example:
+
+Drone1:
+(0,0,50m) at 10:00 → (100,100,50m) at 10:10
+Drone2:
+(50,50,50m) at 10:05 → (150,50,50m) at 10:15
+
+Drone-1 position (0 + (100-0)*(7/10), 0 + (100-0)*(7/10), 50) = (70,70,50)
+Drone-2 position (50 + (150-50)*(2/10), 50, 50) = (70,50,50)
+Distance check = sqrt((70-70)² + (70-50)² + (50-50)²) = 20m  # Safe if buffer=5m
+
+o/p:
+Blue line: Drone1 diagonal path
+Red line: Drone2 's horizontal path
+Yellow X: Appears if they come within 5m
+"""
 class MissionVisualizer:
     def __init__(self):
         self.fig = plt.figure(figsize=(14, 10))
@@ -15,7 +47,6 @@ class MissionVisualizer:
         self.time_text = self.ax.text2D(0.02, 0.95, '', transform=self.ax.transAxes)
 
     def plot_missions(self, primary: DroneMission, others: List[DroneMission], conflicts: List[Dict] = None):
-        """Plot all missions and highlight conflicts"""
         # Plot primary mission
         self._plot_single_mission(primary, color='blue', label='Primary Mission')
 
@@ -37,7 +68,6 @@ class MissionVisualizer:
         plt.tight_layout()
 
     def _plot_single_mission(self, mission: DroneMission, color: str, label: str):
-        """Plot a single mission trajectory"""
         if not mission.trajectory:
             mission.generate_trajectory(speed=10.0)
 
@@ -49,9 +79,6 @@ class MissionVisualizer:
 
     def animate_missions(self, primary: DroneMission, others: List[DroneMission],
                          conflicts: List[Dict], output_file: str = None, fps: int = 10):
-        """
-        Create an animated visualization of the missions with time progression.
-        """
         if not primary.trajectory:
             primary.generate_trajectory(speed=10.0)
         for mission in others:
@@ -158,7 +185,7 @@ class MissionVisualizer:
             writer = FFMpegWriter(fps=fps, metadata=dict(artist='UAV Simulation'), bitrate=1800)
             ani.save(output_file, writer=writer, dpi=300)
             plt.close()
-            print(f"\n🎥 Video generated successfully and saved to {output_file}")
+            print(f"\n Video generated successfully and saved to {output_file}")
         else:
             plt.tight_layout()
             plt.show()
